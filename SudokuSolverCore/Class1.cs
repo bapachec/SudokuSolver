@@ -5,121 +5,229 @@
 
     internal class SudokuSolver
     {
-        private bool[,] visited = new bool[9,9];
+        //private bool[,] visited = new bool[9,9];
         private int num_states = 0;
         
         //public SudokuSolver(int[,] arr) { sudokuMatrix = arr; }
 
         public void solveSudoku(int[,] sudokuMatrix)
         {
-            Dictionary<string, string> map = new Dictionary<string, string>();
 
             //ac-3
-            preprocessMatrix(map, sudokuMatrix);
+            Dictionary<string, string> cells_dict = preprocessMatrix(sudokuMatrix);
 
+            if (cells_dict != null || cells_dict?.Count == 0)
+            {
+                print(sudokuMatrix, num_states);
+            }
 
-            if (map.Count != 0)
+            /*
+            if (cells_dict?.Count != 0)
             {
                 //get a node (key with least amount of possible domain values)
-                string key = null;
+                string cell = null;
                 int i = 2;
                 do
                 {
-                    var keys = map.Where(kvp => kvp.Value.Length == i).Select(kvp => kvp.Key).ToList();
+                    var cells = cells_dict?.Where(kvp => kvp.Value.Length == i).Select(kvp => kvp.Key).ToList();
 
-                    if (keys != null)
-                        key = keys[0];
+                    if (cells != null)
+                        cell = cells[0];
 
                     i++;
 
-                } while (key == null);
+                } while (cell == null);
 
                 //uses recursive dfs to check
 
                 //sudokuMatrix = recursive_dfs(key, map, sudokuMatrix);
 
             }
-
+            */
 
 
             print(sudokuMatrix, num_states);
             
         }
 
-        private void preprocessMatrix(Dictionary<string, string> map, int[,] sudokuMatrix)
+        //return dictionary
+        private Dictionary<string, string> preprocessMatrix(int[,] sudokuMatrix)
         {
-            (int i, int j) cell = findEmptyCell(sudokuMatrix);
-            while(cell.i != -1)
+
+            //string cell = findEmptyCell(sudokuMatrix);
+            List<string> cellsList = findEmptyCells(sudokuMatrix);
+            //if its not initialized, does this mean its null?
+
+            //this means already solved
+            if (cellsList.Count == 0)
             {
-                string key = cell.i + "" + cell.j;
-                string domain = domainForCell(cell, sudokuMatrix);
-                map[key] = domain;
-                cell = findEmptyCell(sudokuMatrix);
+                return null; //returning null?
             }
 
-            map = propagation(map);
 
-            var keys = map.Where(kvp => kvp.Value.Length == 1).Select(kvp => kvp.Key).ToList();
+            Dictionary<string, string> cells_dict = domainForCell(sudokuMatrix, cellsList);
 
-            //populates cells with domain(values) length of 1 and removes from dict
-            foreach(var key in keys)
+            var cells = cells_dict.Where(kvp => kvp.Value.Length == 1).Select(kvp => kvp.Key).ToList();
+            Stack<string> cellsAssigned = new ();
+            //populates cells with domain(values) length of 1 and stores them in list
+            foreach (string cell in cells)
             {
-                int i = key[0] - '0';
-                int j = key[1] - '0';
+                int i = cell[0] - '0';
+                int j = cell[1] - '0';
 
-                sudokuMatrix[i, j] = int.Parse(map[key]);
-                map.Remove(key);
+                sudokuMatrix[i, j] = int.Parse(cells_dict[cell]);
+                cellsAssigned.Push(cell);
+                cellsList.Remove(cell);
+                cells_dict.Remove(cell);
+            }
+
+            // early return
+            if (cells_dict.Count == 0)
+            {
+                return cells_dict;
+            }
+
+            //if stack is not 0
+            if (cellsAssigned.Count != 0)
+            {
+                //relys on reference types because of modifying reference types
+                reduceDomainValues(cellsList, cellsAssigned, cells_dict, sudokuMatrix);
+                //early return
+                if (cells_dict.Count == 0)
+                    return cells_dict;
+
+            }
+
+
+            /*
+            cells_dict = propagation(cells_dict);
+            */
+
+            return cells_dict;
+
+        }
+
+        //relys on reference types because of modifying cellsAssigned
+        private void reduceDomainValues
+            (List<string> allCells, Stack<string> cellsAssigned, Dictionary<string, string> cells_dict, int[,] sudokuMatrix)
+        {
+
+            List<string> cellsToErase = new List<string>();
+
+            while(cellsAssigned.Count != 0)
+            {
+                string assignedCell = cellsAssigned.Pop();
+                
+                foreach(string unassignedCell in allCells)
+                {
+                    if (assignedCell[0] == unassignedCell[0] || assignedCell[1] == unassignedCell[1])
+                    {
+                        string domain = cells_dict[unassignedCell];
+
+                        int i = assignedCell[0] - '0';
+                        int j = assignedCell[1] - '0';
+                        string assigned = sudokuMatrix[i, j].ToString();
+
+                        if (domain.Contains(assigned))
+                        {
+                            domain = domain.Replace(assigned, "");
+
+                            if (domain.Length == 1)
+                            {
+                                cellsToErase.Add(unassignedCell);
+
+                            }
+
+                            cells_dict[unassignedCell] = domain;
+
+                        }
+
+
+                    }
+
+                }
+
+                allCells.RemoveAll(item => cellsToErase.Contains(item));
+                foreach (string item in cellsToErase)
+                {
+                    cellsAssigned.Push(item);
+                    //cells_dict.Remove(item);
+                    string assignedValue = cells_dict[item];
+                    int p = item[0] - '0';
+                    int q = item[1] - '0';
+                    int value = int.Parse(assignedValue);
+                    sudokuMatrix[p, q] = value;
+                }
+                cellsToErase.Clear();
+
+                //means all cells are filled
+                if (allCells.Count == 0)
+                {
+                    cells_dict.Clear();
+                    return;
+                }
 
             }
 
         }
 
         //==================================================================================
-        private (int, int) findEmptyCell(int[,] sudokuMatrix)
+        //replace visited with list
+        private List<string> findEmptyCells(int[,] sudokuMatrix)
         {
-            //int[] index = { 0, 0 };
-
+            List<string> emptyCellsList = new ();
+            //string cell = "";
             for (int i = 0; i < 9; i++)
             {
                 for (int j = 0; j < 9; j++)
                 {
-                    if (sudokuMatrix[i, j] == 0 && !visited[i,j])
+                    if (sudokuMatrix[i, j] == 0)
                     {
                         //index[0] = i;
                         //index[1] = j;
-                        visited[i,j] = true;
-                        return (i, j);
+                        //visited[i,j] = true;
+                        //return (i, j);
+                        emptyCellsList.Add(i + "" + j);
                     }
                 }
             }
 
-            return (-1, -1);
+            //return (-1, -1);
+            return emptyCellsList;
         }
 
-        private string domainForCell((int i, int j) cell, int[,] sudokuMatrix)
+        private Dictionary<string, string> domainForCell(int[,] sudokuMatrix, List<string> cellsList)
         {
-            string domain = "123456789";
-            domain = subMatrix(cell, domain, sudokuMatrix);
-            domain = rowcolNearTarget(cell, domain, sudokuMatrix);
-            return domain;
+            Dictionary<string, string> cells_dict = new();
+            
+            foreach (string cell in cellsList)
+            {
+                string domain = "123456789";
+                domain = subMatrix(cell, domain, sudokuMatrix);
+                domain = rowcolNearTarget(cell, domain, sudokuMatrix);
+                cells_dict[cell] = domain;
+            }
+
+
+            return cells_dict;
         }
 
         //==================================================================================
         //METHODS to constraint values
-        private string subMatrix((int i, int j) cell, string domain, int [,] sudokuMatrix)
+        private string subMatrix(string cell, string domain, int [,] sudokuMatrix)
         {
-            
-            int row = (cell.i / 3) * 3;
-            int col = (cell.j / 3) * 3;
+
+            int row = ((cell[0] - '0') / 3) * 3;
+            int col = ((cell[1] - '0') / 3) * 3;
 
             for (int i = row; i < row + 3; i++)
             {
                 for (int j = col; j < col + 3; j++)
                 {
-                    string possibleVal = sudokuMatrix[i, j].ToString();
-                    if (domain.Contains(possibleVal))
+                    string value = sudokuMatrix[i, j].ToString();
+                    if (domain.Contains(value))
                     {
-                        domain = domain.Replace(possibleVal, "");
+                        domain = domain.Replace(value, "");
                     }
                 }
             }
@@ -127,23 +235,23 @@
             return domain;
         }
 
-        private string rowcolNearTarget((int i, int j) cell, string domain, int[,] sudokuMatrix)
+        private string rowcolNearTarget(string cell, string domain, int[,] sudokuMatrix)
         {
-            int row = cell.i;
-            int col = cell.j;
+            int row = cell[0] - '0';
+            int col = cell[1] - '0';
 
             for (int i = 0; i < 9; i++)
             {
-                string possibleVal = sudokuMatrix[row, i].ToString();
-                if (domain.Contains(possibleVal))
+                string value = sudokuMatrix[row, i].ToString();
+                if (domain.Contains(value))
                 {
-                    domain = domain.Replace(possibleVal, "");
+                    domain = domain.Replace(value, "");
                 }
 
-                possibleVal = sudokuMatrix[i, col].ToString();
-                if (domain.Contains(possibleVal))
+                value = sudokuMatrix[i, col].ToString();
+                if (domain.Contains(value))
                 {
-                    domain = domain.Replace(possibleVal, "");
+                    domain = domain.Replace(value, "");
                 }
 
             }
@@ -205,28 +313,32 @@
             return dict_sudoku;
         }
 
-        private Dictionary<string, string> fowardCheck(string cell, Dictionary<string, string> dict_sudoku, int[,] sudokuMatrix)
-        {
+        /*
+         * 
+         *         private Dictionary<string, string> fowardCheck(string cell, Dictionary<string, string> dict_sudoku, int[,] sudokuMatrix)
+                {
 
-            int i = cell[0] - '0';
-            int j = cell[1] - '1';
+                    int i = cell[0] - '0';
+                    int j = cell[1] - '1';
 
-            foreach(KeyValuePair<string, string> entry in dict_sudoku)
-            {
-                string newdomain = subMatrix((i, j), entry.Value, sudokuMatrix);
-                if (newdomain.Length == 0)
-                    return null;
+                    foreach(KeyValuePair<string, string> entry in dict_sudoku)
+                    {
+                        string newdomain = subMatrix((i, j), entry.Value, sudokuMatrix);
+                        if (newdomain.Length == 0)
+                            return null;
 
-                newdomain = rowcolNearTarget((i, j), newdomain, sudokuMatrix);
-                if (newdomain.Length == 0)
-                    return null;
+                        newdomain = rowcolNearTarget((i, j), newdomain, sudokuMatrix);
+                        if (newdomain.Length == 0)
+                            return null;
 
-                dict_sudoku[entry.Key] = newdomain;
-            }
+                        dict_sudoku[entry.Key] = newdomain;
+                    }
 
 
-            return dict_sudoku;
-        }
+                    return dict_sudoku;
+                }
+         * 
+         */
 
 
         //return matrix
@@ -235,6 +347,9 @@
         {
             if (dict_sudoku.Count == 0)
                 return sudokuMatrix;
+
+
+            /////////most constrained variable heuristic////////
 
             //else get a cell, do not use parameter
 
