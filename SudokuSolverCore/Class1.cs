@@ -22,27 +22,13 @@
             }
 
             /*
-            if (cells_dict?.Count != 0)
-            {
-                //get a node (key with least amount of possible domain values)
-                string cell = null;
-                int i = 2;
-                do
-                {
-                    var cells = cells_dict?.Where(kvp => kvp.Value.Length == i).Select(kvp => kvp.Key).ToList();
+            
+            //propaagation(cells_list, sudokuMatrix);
+             
 
-                    if (cells != null)
-                        cell = cells[0];
+            //uses recursive dfs to check
+            recursive_dfs(cells_dict, sudokuMatrix);
 
-                    i++;
-
-                } while (cell == null);
-
-                //uses recursive dfs to check
-
-                //sudokuMatrix = recursive_dfs(key, map, sudokuMatrix);
-
-            }
             */
 
 
@@ -117,16 +103,17 @@
             while(cellsAssigned.Count != 0)
             {
                 string assignedCell = cellsAssigned.Pop();
-                
-                foreach(string unassignedCell in allCells)
+                int i = assignedCell[0] - '0';
+                int j = assignedCell[1] - '0';
+                string assigned = sudokuMatrix[i, j].ToString();
+
+                foreach (string unassignedCell in allCells)
                 {
                     if (assignedCell[0] == unassignedCell[0] || assignedCell[1] == unassignedCell[1])
                     {
                         string domain = cells_dict[unassignedCell];
 
-                        int i = assignedCell[0] - '0';
-                        int j = assignedCell[1] - '0';
-                        string assigned = sudokuMatrix[i, j].ToString();
+
 
                         if (domain.Contains(assigned))
                         {
@@ -342,97 +329,6 @@
 
 
         //return matrix
-
-        private int[,] recursive_dfs(string cell, Dictionary<string, string> dict_sudoku, int[,] sudokuMatrix)
-        {
-            if (dict_sudoku.Count == 0)
-                return sudokuMatrix;
-
-
-            /////////most constrained variable heuristic////////
-
-            //else get a cell, do not use parameter
-
-            //Stack<State> stack = new();
-
-            //int i = node[0] - '0';
-            //int j = node[1] - '0';
-            //string domain = dict_sudoku[node];
-
-            //State state = new(dict_sudoku, (i , j), domain);
-
-            //stack.Push(state);
-
-            //Tried to solve by iterative (stack)
-            //=============================================================
-            //using recursive
-
-            string domain = dict_sudoku[cell];
-            //tryout each value in domain
-            foreach(char value in domain)
-            {
-                //int digit = value - '0';
-
-                //deep copy
-                Dictionary<string, string> dict_copy = new();
-                foreach(var kvp in dict_sudoku)
-                {
-                    dict_copy[kvp.Key] = kvp.Value;
-                }
-
-                //update dict_copy with single value
-                dict_copy[cell] = value.ToString();
-
-
-                //propagate with constrained value
-                dict_copy = propagation(dict_copy);
-                //if propagate did not return null (meaning go foward) then recursive
-                if (dict_copy == null)
-                {
-                    continue;
-                    
-                }
-
-                num_states++;
-
-                int[,] copyMatrix = deepCopy(sudokuMatrix);
-
-                var keys = dict_copy.Where(kvp => kvp.Value.Length == 1).Select(kvp => kvp.Key).ToList();
-
-                //populates cells with domain(values) length of 1 and removes from dict
-                foreach (var key_value in keys)
-                {
-                    int i = key_value[0] - '0';
-                    int j = key_value[1] - '0';
-
-                    copyMatrix[i, j] = int.Parse(dict_copy[key_value]);
-                    dict_copy.Remove(key_value);
-
-                }
-
-                //early return
-                if (dict_copy.Count == 0)
-                    return copyMatrix;
-
-
-                /*
-                dict_copy = fowardCheck(cell, dict_copy, copyMatrix);
-                if (dict_copy == null)
-                    continue;
-                */
-
-
-                int[,] result = recursive_dfs(dict_copy, copyMatrix);
-                if (result != null)
-                    return result;
-            }
-
-
-
-            //if dict_sudoku has all domain != 1 return false
-
-            return null;
-        }
 
         private int[,] recursive_dfs(Dictionary<string, string> dict_sudoku, int[,] sudokuMatrix)
         {
