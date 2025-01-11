@@ -6,7 +6,7 @@
     internal class SudokuSolver
     {
         //private bool[,] visited = new bool[9,9];
-        private int num_states = 0;
+        private ulong num_states = 0;
 
         private List<string> AllMissingCells = new List<string>();
         //public SudokuSolver(int[,] arr) { sudokuMatrix = arr; }
@@ -25,14 +25,14 @@
                     Console.Write("PUZZLE SOLVED");
                 return;
             }
-  
+
 
             //uses recursive dfs to check
-            recursive_dfs(cells_dict, sudokuMatrix);
+            sudokuMatrix = recursive_dfs(cells_dict, sudokuMatrix);
 
 
             print(sudokuMatrix, num_states);
-            
+
         }
 
         //return dictionary
@@ -53,7 +53,7 @@
             Dictionary<string, string> cells_dict = domainForCell(sudokuMatrix, cellsList);
 
             var cells = cells_dict.Where(kvp => kvp.Value.Length == 1).Select(kvp => kvp.Key).ToList();
-            Stack<string> cellsAssigned = new ();
+            Stack<string> cellsAssigned = new();
             //populates cells with domain(values) length of 1 and stores them in list
             foreach (string cell in cells)
             {
@@ -96,7 +96,7 @@
 
             List<string> cellsToErase = new List<string>();
 
-            while(cellsAssigned.Count != 0)
+            while (cellsAssigned.Count != 0)
             {
                 string assignedCell = cellsAssigned.Pop();
                 int i = assignedCell[0] - '0';
@@ -152,7 +152,7 @@
         //replace visited with list
         private List<string> findEmptyCells(int[,] sudokuMatrix)
         {
-            List<string> emptyCellsList = new ();
+            List<string> emptyCellsList = new();
             //string cell = "";
             for (int i = 0; i < 9; i++)
             {
@@ -177,7 +177,7 @@
         private Dictionary<string, string> domainForCell(int[,] sudokuMatrix, List<string> cellsList)
         {
             Dictionary<string, string> cells_dict = new();
-            
+
             foreach (string cell in cellsList)
             {
                 string domain = "123456789";
@@ -192,7 +192,7 @@
 
         //==================================================================================
         //METHODS to constraint values
-        private string subMatrix(string cell, string domain, int [,] sudokuMatrix)
+        private string subMatrix(string cell, string domain, int[,] sudokuMatrix)
         {
             int x = cell[0] - '0';
             int y = cell[1] - '0';
@@ -257,7 +257,7 @@
         {
             int x, y;
             string value;
-            foreach(string cell in AllMissingCells)
+            foreach (string cell in AllMissingCells)
             {
                 x = cell[0] - '0';
                 y = cell[1] - '0';
@@ -278,17 +278,17 @@
         {
             bool finished = false;
 
-            while(!finished)
+            while (!finished)
             {
                 finished = true;
 
-                foreach( (string key, string domain) in dict_sudoku)
+                foreach ((string key, string domain) in dict_sudoku)
                 {
                     if (domain.Length == 1)
                     {
 
 
-                        foreach((string keyTwo, string domainTwo) in dict_sudoku)
+                        foreach ((string keyTwo, string domainTwo) in dict_sudoku)
                         {
                             if (!key.Equals(keyTwo))
                             {
@@ -326,33 +326,6 @@
             return dict_sudoku;
         }
 
-        /*
-         * 
-         *         private Dictionary<string, string> fowardCheck(string cell, Dictionary<string, string> dict_sudoku, int[,] sudokuMatrix)
-                {
-
-                    int i = cell[0] - '0';
-                    int j = cell[1] - '1';
-
-                    foreach(KeyValuePair<string, string> entry in dict_sudoku)
-                    {
-                        string newdomain = subMatrix((i, j), entry.Value, sudokuMatrix);
-                        if (newdomain.Length == 0)
-                            return null;
-
-                        newdomain = rowcolNearTarget((i, j), newdomain, sudokuMatrix);
-                        if (newdomain.Length == 0)
-                            return null;
-
-                        dict_sudoku[entry.Key] = newdomain;
-                    }
-
-
-                    return dict_sudoku;
-                }
-         * 
-         */
-
 
         //return matrix
 
@@ -360,7 +333,10 @@
         {
             if (dict_sudoku.Count == 0)
             {
-                return sudokuMatrix;
+                if (validateSolution(sudokuMatrix))
+                    return sudokuMatrix;
+                else
+                    return null;
             }
 
             string cell = null;
@@ -369,7 +345,7 @@
             {
                 var keys = dict_sudoku.Where(kvp => kvp.Value.Length == k).Select(kvp => kvp.Key).ToList();
 
-                if (keys != null)
+                if (keys.Count != 0)
                     cell = keys[0];
 
                 k++;
@@ -399,12 +375,12 @@
                 //propagation(dict_copy, sudokuMatrix);
                 //if propagate did not return null (meaning go foward) then recursive
                 //if (dict_copy == null) { continue; }
+                //fowardcheck would be placed here
 
                 num_states++;
 
                 int[,] copyMatrix = deepCopy(sudokuMatrix);
 
-                /*
                 var keys = dict_copy.Where(kvp => kvp.Value.Length == 1).Select(kvp => kvp.Key).ToList();
 
                 //populates cells with domain(values) length of 1 and removes from dict
@@ -417,12 +393,11 @@
                     dict_copy.Remove(key_value);
 
                 }
-                 * 
-                 */
+
 
                 //early return
-                if (dict_copy.Count == 0)
-                    return copyMatrix;
+                //if (dict_copy.Count == 0)
+                //    return copyMatrix;
 
 
                 int[,] result = recursive_dfs(dict_copy, copyMatrix);
@@ -452,7 +427,7 @@
         }
 
 
-        public static void print(int[,] arr, int num_states)
+        public static void print(int[,] arr, ulong num_states)
         {
             for (int i = 0; i < 9; i++)
             {
