@@ -16,20 +16,15 @@
             //ac-3
             Dictionary<string, string> cells_dict = preprocessMatrix(sudokuMatrix);
 
-            if (cells_dict != null || cells_dict?.Count == 0)
+            if (cells_dict == null || cells_dict?.Count == 0)
             {
                 print(sudokuMatrix, num_states);
+                return;
             }
-
-            /*
-            
-            //propaagation(cells_list, sudokuMatrix);
-             
+  
 
             //uses recursive dfs to check
             recursive_dfs(cells_dict, sudokuMatrix);
-
-            */
 
 
             print(sudokuMatrix, num_states);
@@ -84,10 +79,7 @@
 
             }
 
-
-            /*
-            cells_dict = propagation(cells_dict);
-            */
+            //propaagation(cells_dict, sudokuMatrix);
 
             return cells_dict;
 
@@ -144,15 +136,9 @@
                     int q = item[1] - '0';
                     int value = int.Parse(assignedValue);
                     sudokuMatrix[p, q] = value;
+                    cells_dict.Remove(item);
                 }
                 cellsToErase.Clear();
-
-                //means all cells are filled
-                if (allCells.Count == 0)
-                {
-                    cells_dict.Clear();
-                    return;
-                }
 
             }
 
@@ -203,14 +189,18 @@
         //METHODS to constraint values
         private string subMatrix(string cell, string domain, int [,] sudokuMatrix)
         {
-
-            int row = ((cell[0] - '0') / 3) * 3;
-            int col = ((cell[1] - '0') / 3) * 3;
+            int x = cell[0] - '0';
+            int y = cell[1] - '0';
+            int row = (x / 3) * 3;
+            int col = (y / 3) * 3;
 
             for (int i = row; i < row + 3; i++)
             {
                 for (int j = col; j < col + 3; j++)
                 {
+                    if (x == i && y == j)
+                        continue;
+
                     string value = sudokuMatrix[i, j].ToString();
                     if (domain.Contains(value))
                     {
@@ -229,17 +219,26 @@
 
             for (int i = 0; i < 9; i++)
             {
-                string value = sudokuMatrix[row, i].ToString();
-                if (domain.Contains(value))
+                string value;
+                //outer if statements are to ensure cell is skipped
+                if (col != i)
                 {
-                    domain = domain.Replace(value, "");
+                    value = sudokuMatrix[row, i].ToString();
+                    if (domain.Contains(value))
+                    {
+                        domain = domain.Replace(value, "");
+                    }
                 }
 
-                value = sudokuMatrix[i, col].ToString();
-                if (domain.Contains(value))
+                if (row != i)
                 {
-                    domain = domain.Replace(value, "");
+                    value = sudokuMatrix[i, col].ToString();
+                    if (domain.Contains(value))
+                    {
+                        domain = domain.Replace(value, "");
+                    }
                 }
+
 
             }
 
@@ -332,26 +331,24 @@
 
         private int[,] recursive_dfs(Dictionary<string, string> dict_sudoku, int[,] sudokuMatrix)
         {
-            string cell = null;
             if (dict_sudoku.Count == 0)
             {
                 return sudokuMatrix;
             }
-            else
+
+            string cell = null;
+            int k = 2;
+            do
             {
+                var keys = dict_sudoku.Where(kvp => kvp.Value.Length == k).Select(kvp => kvp.Key).ToList();
 
-                int i = 2;
-                do
-                {
-                    var keys = dict_sudoku.Where(kvp => kvp.Value.Length == i).Select(kvp => kvp.Key).ToList();
+                if (keys != null)
+                    cell = keys[0];
 
-                    if (keys != null)
-                        cell = keys[0];
+                k++;
 
-                    i++;
-
-                } while (cell == null);
-            }
+            } while (cell == null);
+            
 
 
             string domain = dict_sudoku[cell];
@@ -372,18 +369,15 @@
 
 
                 //propagate with constrained value
-                dict_copy = propagation(dict_copy);
+                //propagation(dict_copy, sudokuMatrix);
                 //if propagate did not return null (meaning go foward) then recursive
-                if (dict_copy == null)
-                {
-                    continue;
-
-                }
+                //if (dict_copy == null) { continue; }
 
                 num_states++;
 
                 int[,] copyMatrix = deepCopy(sudokuMatrix);
 
+                /*
                 var keys = dict_copy.Where(kvp => kvp.Value.Length == 1).Select(kvp => kvp.Key).ToList();
 
                 //populates cells with domain(values) length of 1 and removes from dict
@@ -396,17 +390,12 @@
                     dict_copy.Remove(key_value);
 
                 }
+                 * 
+                 */
 
                 //early return
                 if (dict_copy.Count == 0)
                     return copyMatrix;
-
-
-                /*
-                dict_copy = fowardCheck(cell, dict_copy, copyMatrix);
-                if (dict_copy == null)
-                    continue;
-                */
 
 
                 int[,] result = recursive_dfs(dict_copy, copyMatrix);
