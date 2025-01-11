@@ -326,8 +326,35 @@
             return dict_sudoku;
         }
 
+        
+        private bool fowardCheck(Dictionary<string, string> dict_sudoku, string primeCell)
+        {
+            Dictionary<string, string> toUpdateWith = new Dictionary<string, string>();
+            
+            string primeDomain = dict_sudoku[primeCell];
 
-        //return matrix
+            foreach((string cell, string domain) in dict_sudoku)
+            {
+
+                if (cell.Equals(primeCell))
+                    continue;
+
+                if ((cell[0] == primeCell[0] || cell[1] == primeCell[1]) && domain.Contains(primeDomain))
+                {
+                    string reducedDomain = domain.Replace(primeDomain, "");
+                    if (reducedDomain.Length == 0)
+                        return false;
+                    toUpdateWith[cell] = reducedDomain;
+                }
+            }
+
+            foreach((string cell, string domain) in toUpdateWith)
+            {
+                dict_sudoku[cell] = domain;
+            }
+
+            return true;
+        }
 
         private int[,] recursive_dfs(Dictionary<string, string> dict_sudoku, int[,] sudokuMatrix)
         {
@@ -376,6 +403,8 @@
                 //if propagate did not return null (meaning go foward) then recursive
                 //if (dict_copy == null) { continue; }
                 //fowardcheck would be placed here
+                if (!fowardCheck(dict_copy, cell))
+                    continue;
 
                 num_states++;
 
