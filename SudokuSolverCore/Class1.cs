@@ -7,7 +7,8 @@
     {
         //private bool[,] visited = new bool[9,9];
         private int num_states = 0;
-        
+
+        private List<string> AllMissingCells = new List<string>();
         //public SudokuSolver(int[,] arr) { sudokuMatrix = arr; }
 
         public void solveSudoku(int[,] sudokuMatrix)
@@ -19,6 +20,9 @@
             if (cells_dict == null || cells_dict?.Count == 0)
             {
                 print(sudokuMatrix, num_states);
+                //perhaps write solution to a txt file.
+                if (validateSolution(sudokuMatrix))
+                    Console.Write("PUZZLE SOLVED");
                 return;
             }
   
@@ -161,6 +165,7 @@
                         //visited[i,j] = true;
                         //return (i, j);
                         emptyCellsList.Add(i + "" + j);
+                        AllMissingCells.Add(i + "" + j);
                     }
                 }
             }
@@ -246,6 +251,28 @@
         }
 
         //==================================================================================
+
+        //perhaps use threads here
+        private bool validateSolution(int[,] sudokuMatrix)
+        {
+            int x, y;
+            string value;
+            foreach(string cell in AllMissingCells)
+            {
+                x = cell[0] - '0';
+                y = cell[1] - '0';
+                value = sudokuMatrix[x, y].ToString();
+                if (subMatrix(cell, value, sudokuMatrix).Length == 0)
+                    return false;
+
+                if (rowcolNearTarget(cell, value, sudokuMatrix).Length == 0)
+                    return false;
+
+            }
+
+            return true;
+        }
+
 
         private Dictionary<string, string> propagation(Dictionary<string, string> dict_sudoku)
         {
