@@ -273,61 +273,52 @@
             return true;
         }
 
-
-        private Dictionary<string, string> propagation(Dictionary<string, string> dict_sudoku)
+        //todo can make more efficient by deepcopying dict and eliminating keys candidates with hashset
+        private bool propagation(Dictionary<string, string> dict_sudoku, string primecell)
         {
-            bool finished = false;
 
-            while (!finished)
+            Queue<string> queue = new Queue<string>();
+            HashSet<string> set = new HashSet<string>();
+            List<string> keys;
+            //Dictionary<string, string> dict_copy = new();
+
+            //uncomment to use in preprocess phase.
+            //var keys = dict_sudoku.Where(kvp => kvp.Value.Length == 1).Select(kvp => kvp.Key).ToList();
+            //foreach (string key in keys)
+            //{
+            //    queue.Enqueue(key);
+            //}
+
+            //comment this line if in used within dfs
+            queue.Enqueue(primecell);
+
+            while (queue.Count != 0)
             {
-                finished = true;
 
-                foreach ((string key, string domain) in dict_sudoku)
+                string currentCell = queue.Dequeue();
+
+                set.Add(currentCell);
+
+                if (!forwardCheck(dict_sudoku, currentCell))
+                    return false;
+
+                //var is used if propagation is not used in preprocessing and only in dfs
+                keys = dict_sudoku.Where(kvp => kvp.Value.Length == 1).Select(kvp => kvp.Key).ToList();
+                keys.RemoveAll(item => set.Contains(item));
+                foreach (string key in keys)
                 {
-                    if (domain.Length == 1)
-                    {
-
-
-                        foreach ((string keyTwo, string domainTwo) in dict_sudoku)
-                        {
-                            if (!key.Equals(keyTwo))
-                            {
-                                if (key[0] == keyTwo[0] && domainTwo.Contains(domain))
-                                {
-                                    string newValue = domainTwo.Replace(domain, "");
-                                    //check if newValue is empty, throw error
-                                    if (newValue.Length == 0)
-                                        return null;
-
-                                    dict_sudoku[keyTwo] = newValue;
-                                    finished = false;
-                                }
-
-                                if (key[1] == keyTwo[1] && domainTwo.Contains(domain))
-                                {
-                                    string newValue = domainTwo.Replace(domain, "");
-                                    //check if newValue is empty, throw error
-                                    if (newValue.Length == 0)
-                                        return null;
-
-                                    dict_sudoku[keyTwo] = newValue;
-                                    finished = false;
-                                }
-                            }
-
-
-                        }
-
-
-                    }
+                    if (!queue.Contains(key))
+                        queue.Enqueue(key);
                 }
+
             }
 
-            return dict_sudoku;
+
+            return true;
         }
 
         
-        private bool fowardCheck(Dictionary<string, string> dict_sudoku, string primeCell)
+        private bool forwardCheck(Dictionary<string, string> dict_sudoku, string primeCell)
         {
             Dictionary<string, string> toUpdateWith = new Dictionary<string, string>();
             
@@ -366,6 +357,7 @@
                     return null;
             }
 
+            //picks most constrainted node
             string cell = null;
             int k = 2;
             do
@@ -398,13 +390,15 @@
                 dict_copy[cell] = value.ToString();
 
 
+                //only one algorithm can be used since using both is redudant.
+
                 //propagate with constrained value
-                //propagation(dict_copy, sudokuMatrix);
-                //if propagate did not return null (meaning go foward) then recursive
-                //if (dict_copy == null) { continue; }
-                //fowardcheck would be placed here
-                if (!fowardCheck(dict_copy, cell))
+                if (!propagation(dict_copy, cell))
                     continue;
+
+                //fowardcheck would be placed here
+                //if (!forwardCheck(dict_copy, cell))
+                //    continue;
 
                 num_states++;
 
