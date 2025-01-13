@@ -37,6 +37,7 @@
 
         }
 
+        //================================================================================
         //used new record Cell
         private void searchBox(int[,] sudokuMatrix)
         {
@@ -92,6 +93,7 @@
             return row + "" + col;
         }
 
+        //================================================================================
         //return dictionary
         private Dictionary<string, string> preprocessMatrix(int[,] sudokuMatrix)
         {
@@ -147,6 +149,7 @@
         }
 
         //relys on reference types because of modifying cellsAssigned
+        //goes over cells again because of updated matrix where cells with 1 domain length were plugged in.
         private void reduceDomainValues
             (List<string> allCells, Stack<string> cellsAssigned, Dictionary<string, string> cells_dict, int[,] sudokuMatrix)
         {
@@ -407,8 +410,10 @@
 
                 if (toUpdateWith.ContainsKey(cellInBox))
                     dict = toUpdateWith;
-                else
+                else if (dict_sudoku.ContainsKey(cellInBox))
                     dict = dict_sudoku;
+                else
+                    continue;
 
                 string domain = dict[cellInBox];
                 if (domain.Contains(primeDomain))
@@ -476,12 +481,12 @@
                 //only one algorithm can be used since using both is redudant.
 
                 //propagate with constrained value
-                if (!propagation(dict_copy, cell))
-                    continue;
+                //if (!propagation(dict_copy, cell))
+                //    continue;
 
                 //fowardcheck would be placed here
-                //if (!forwardCheck(dict_copy, cell))
-                //    continue;
+                if (!forwardCheck(dict_copy, cell))
+                    continue;
 
                 num_states++;
 
