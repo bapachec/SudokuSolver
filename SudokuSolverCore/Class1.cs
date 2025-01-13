@@ -1,14 +1,15 @@
 ﻿namespace SudokuSolverCore
 {
-
-    internal record State(Dictionary<string, string> dict_sudoku, (int i, int j) cell, string domain);
-
+    internal record Cell(int x, int y);
     internal class SudokuSolver
     {
         //private bool[,] visited = new bool[9,9];
         private ulong num_states = 0;
 
         private List<string> AllMissingCells = new List<string>();
+
+        private Dictionary<string, List<string>> BoxNeighbors = new ();
+
         //public SudokuSolver(int[,] arr) { sudokuMatrix = arr; }
 
         public void solveSudoku(int[,] sudokuMatrix)
@@ -26,6 +27,7 @@
                 return;
             }
 
+            searchBox(sudokuMatrix);
 
             //uses recursive dfs to check
             sudokuMatrix = recursive_dfs(cells_dict, sudokuMatrix);
@@ -33,6 +35,61 @@
 
             print(sudokuMatrix, num_states);
 
+        }
+
+        //used new record Cell
+        private void searchBox(int[,] sudokuMatrix)
+        {
+            Cell[] nineBoxes = { 
+                new Cell(0,0), new Cell(0,3), new Cell(0,6),
+                new Cell(3,0), new Cell(3,3), new Cell(3,6),
+                new Cell(6,0), new Cell(6,3), new Cell(6,6),
+            };
+
+            
+            //for loop for all 9 boxes in sudoku puzzle
+            for (int i = 0; i < 9; i++)
+            {
+                List<string> neighborCells = new List<string>();
+
+                
+
+                Cell currCell = nineBoxes[i];
+
+                string box = currCell.x + "" + currCell.y;
+
+                int row = currCell.x;
+                int col = currCell.y;
+
+                //3x3 matrix search in sudoku puzzle for empty cells
+                for (int p = row; p < row + 3; p++)
+                {
+                    for (int q = col; q < col + 3; q++)
+                    {
+                        int value = sudokuMatrix[p, q];
+                        if (value == 0)
+                        {
+                            string emptyCell = p + "" + q;
+                            neighborCells.Add(emptyCell);
+                        }
+
+                    }
+                }
+
+                BoxNeighbors[box] = neighborCells;
+
+            }
+
+        }
+
+        private string getBoxKey(string cell)
+        {
+            int x = cell[0] - '0';
+            int y = cell[1] - '0';
+            int row = (x / 3) * 3;
+            int col = (y / 3) * 3;
+
+            return row + "" + col;
         }
 
         //return dictionary
@@ -160,10 +217,6 @@
                 {
                     if (sudokuMatrix[i, j] == 0)
                     {
-                        //index[0] = i;
-                        //index[1] = j;
-                        //visited[i,j] = true;
-                        //return (i, j);
                         emptyCellsList.Add(i + "" + j);
                         AllMissingCells.Add(i + "" + j);
                     }
@@ -273,7 +326,6 @@
             return true;
         }
 
-        //todo can make more efficient by deepcopying dict and eliminating keys candidates with hashset
         private bool propagation(Dictionary<string, string> dict_sudoku, string primecell)
         {
 
@@ -337,9 +389,40 @@
                         return false;
                     toUpdateWith[cell] = reducedDomain;
                 }
+                //todo: use box method, as above only checks rows and cols
+                //foreach list contains and reduce domain
             }
 
-            foreach((string cell, string domain) in toUpdateWith)
+
+            //get list from global dictionary
+            string boxKey = getBoxKey(primeCell);
+            List<string> box = BoxNeighbors[boxKey];
+
+            foreach (string cellInBox in box)
+            {
+                if (primeCell.Equals(cellInBox))
+                    continue;
+
+                Dictionary<string, string> dict;
+
+                if (toUpdateWith.ContainsKey(cellInBox))
+                    dict = toUpdateWith;
+                else
+                    dict = dict_sudoku;
+
+                string domain = dict[cellInBox];
+                if (domain.Contains(primeDomain))
+                {
+                    string reducedDomain = domain.Replace(primeDomain, "");
+                    if (reducedDomain.Length == 0)
+                        return false;
+                    toUpdateWith[cellInBox] = reducedDomain;
+                }
+
+            }
+
+
+            foreach ((string cell, string domain) in toUpdateWith)
             {
                 dict_sudoku[cell] = domain;
             }
