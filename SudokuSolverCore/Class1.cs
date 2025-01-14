@@ -1,7 +1,7 @@
-﻿namespace SudokuSolverCore
+﻿namespace SudokuSolverCore.Solvers
 {
     internal record Cell(int x, int y);
-    internal class SudokuSolver
+    public class SudokuSolver
     {
         //private bool[,] visited = new bool[9,9];
         private ulong num_states = 0;
@@ -12,11 +12,11 @@
 
         //public SudokuSolver(int[,] arr) { sudokuMatrix = arr; }
 
-        public void solveSudoku(int[,] sudokuMatrix)
+        public int[,] solveSudoku(int[,] sudokuMatrix)
         {
 
             //ac-3
-            Dictionary<string, string> cells_dict = preprocessMatrix(sudokuMatrix);
+            Dictionary<string, string> cells_dict = AC_3(sudokuMatrix);
 
             if (cells_dict == null || cells_dict?.Count == 0)
             {
@@ -24,16 +24,17 @@
                 //perhaps write solution to a txt file.
                 if (validateSolution(sudokuMatrix))
                     Console.Write("PUZZLE SOLVED");
-                return;
+                return sudokuMatrix;
             }
 
-            searchBox(sudokuMatrix);
 
             //uses recursive dfs to check
             sudokuMatrix = recursive_dfs(cells_dict, sudokuMatrix);
 
 
             print(sudokuMatrix, num_states);
+
+            return sudokuMatrix;
 
         }
 
@@ -95,7 +96,7 @@
 
         //================================================================================
         //return dictionary
-        private Dictionary<string, string> preprocessMatrix(int[,] sudokuMatrix)
+        private Dictionary<string, string> AC_3(int[,] sudokuMatrix)
         {
 
             //string cell = findEmptyCell(sudokuMatrix);
@@ -226,6 +227,7 @@
                 }
             }
 
+            searchBox(sudokuMatrix);
             //return (-1, -1);
             return emptyCellsList;
         }
@@ -481,12 +483,12 @@
                 //only one algorithm can be used since using both is redudant.
 
                 //propagate with constrained value
-                //if (!propagation(dict_copy, cell))
-                //    continue;
+                if (!propagation(dict_copy, cell))
+                    continue;
 
                 //fowardcheck would be placed here
-                if (!forwardCheck(dict_copy, cell))
-                    continue;
+                //if (!forwardCheck(dict_copy, cell))
+                //    continue;
 
                 num_states++;
 
